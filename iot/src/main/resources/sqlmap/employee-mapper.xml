@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="employee.mapper">
+<!-- 신규사원저장 -->
+<insert id='insert'>
+insert into employees 
+(employee_id, last_name, first_name, email, phone_number, salary
+, hire_date, department_id, job_id, manager_id )
+values ( employees_seq.nextval, #{last_name}, #{first_name}
+		, #{email}, #{phone_number}, #{salary}, #{hire_date}
+		, <if test='department_id==-1'>null</if>
+		  <if test='department_id>-1'>#{department_id}</if>
+		, #{job_id}
+		, <if test='manager_id==-1'>null</if>
+		 <if test='manager_id>0'>#{manager_id}</if>)
+</insert> 
+
+
+<!-- 사원정보 삭제 -->
+<delete id='delete'>
+delete from employees where employee_id=#{id}
+</delete>
+
+<!-- 사원정보 변경저장 -->
+<update id="update">
+update employees set last_name=#{last_name}, first_name=#{first_name}
+		, job_id=#{job_id}
+		, email=#{email}, phone_number=#{phone_number}
+		, hire_date=#{hire_date}, salary=#{salary}
+		,
+		<if test="department_id==-1">department_id=null</if> 
+		<if test="department_id>-1">department_id=#{department_id}</if>		
+where employee_id=#{employee_id}		
+</update>
+
+<!-- 회사의 전체 업무목록조회 -->
+<select id='jobs' resultType="employee.JobVO">
+select * from jobs order by job_title
+</select>
+
+<!-- 회사의 전체 부서목록조회 -->
+<select id='departments' resultType="employee.DepartmentVO">
+select * from departments order by department_name
+</select>
+
+
+<!-- 특정사번의 사원정보조회 -->
+<select id="detail" resultType="employee.EmployeeVO">
+select e.*, department_name, job_title 
+from employees e inner join jobs j on j.job_id = e.job_id
+left outer join departments d on e.department_id=d.department_id
+where e.employee_id = #{id}
+</select>
+
+<!-- 특정부서에 속한 사원목록조회 -->
+<select id="department_list" resultType="employee.EmployeeVO">
+select e.*, department_name, job_title 
+from employees e inner join jobs j on j.job_id = e.job_id
+left outer join departments d on e.department_id=d.department_id
+<if test="department_id == 0">
+where e.department_id is null
+</if>
+<if test="department_id != 0">
+where e.department_id = #{department_id}
+</if>
+</select>
+
+
+<!-- 사원이 속한 부서목록조회 -->
+<select id="employee_departments" resultType="employee.DepartmentVO">
+select distinct department_id
+		, nvl((select department_name from departments
+		   where e.department_id=department_id), '미배치') department_name
+from employees e
+order by department_name
+</select>
+
+
+<!-- 사원목록조회 -->
+<select id="list" resultType="employee.EmployeeVO">
+select e.*, last_name||' '||first_name name
+	, (select department_name from departments d
+	   where e.department_id=d.department_id) department_name
+	, (select job_title from jobs j
+	   where e.job_id=j.job_id) job_title
+from employees e
+order by ${order}
+<!--  
+select e.*, department_name, job_title
+from employees e, jobs j, departments d
+where e.department_id=d.department_id 
+and e.job_id=j.job_id
+-->
+<!--  
+from employees e left outer join departments d 
+						on e.department_id=d.department_id
+inner join jobs j on e.job_id=j.job_id						
+--> 
+
+</select>
+
+</mapper>
